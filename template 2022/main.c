@@ -57,7 +57,13 @@ int main(int argc, char *argv[]) {
     double prior = 0.0;
     double *KiTotal = &total;
     double *priorError = &prior;
+    clock_t prev = clock();
+    clock_t *prevtime= &prev;
+    int kp = 55;
+    int ki = 5; //1
+    int kd = 5; //10
     int changephase = 0;
+    scanf("%d %d %d", &kp, &ki, &kd);
 
     SDL_Event event;
     while(!done){
@@ -66,7 +72,7 @@ int main(int argc, char *argv[]) {
 
         if (robot.auto_mode == 1)
             robotAutoMotorMove(&robot, left_sensor, right_sensor, front_centre_sensor, 
-            KiTotal, priorError, desired);
+            KiTotal, priorError, desired, kp, ki, kd, prevtime);
         robotMotorMove(&robot, crashed);
 
         //Check if robot reaches endpoint. and check sensor values

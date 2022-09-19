@@ -35,6 +35,7 @@ void robotUpdate(struct SDL_Renderer * renderer, struct Robot * robot);
 //Movement
 void robotMotorMove(struct Robot * robot, int crashed);
 void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor,
-                        double * KiTotal, double *prior_error, double desire);
+                        double * KiTotal, double *prior_error, double desire, double ki, double kp, double kd,
+                        clock_t *prevtime);
 
 #endif // ROBOT_H_INCLUDED

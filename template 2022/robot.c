@@ -295,8 +295,8 @@ void robotMotorMove(struct Robot * robot, int crashed) {
         switch(robot->direction){
             case UP :
                 robot->currentSpeed += DEFAULT_SPEED_CHANGE;
-                if (robot->currentSpeed > 8)
-                    robot->currentSpeed = 8;
+                if (robot->currentSpeed > MAX_ROBOT_SPEED/3)
+                    robot->currentSpeed = MAX_ROBOT_SPEED/3;
                 break;
             case DOWN :
                 robot->currentSpeed -= DEFAULT_SPEED_CHANGE;
@@ -326,24 +326,31 @@ void robotMotorMove(struct Robot * robot, int crashed) {
 }
 
 void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor,
-                        double *kiTotal, double *prior_error, double desired) {
+                        double *kiTotal, double *prior_error, double desired, double kp, double ki, double kd
+                        , clock_t * prevtime) {
     
-    const double kp = 40;
-    const double ki = 1;
-    const double kd = 10;
+    
+    clock_t curtime = clock();
+    float delta = curtime - *prevtime;
+    delta = delta / 1e6; // convert to second
+    *prevtime = curtime;
     double Read = front_right_sensor - front_left_sensor;
     double error = (desired - front_right_sensor)/10;
     if (front_sensor > 0){
         robot -> direction = DOWN;
-        robot->angle = (robot->angle - 15)%360;
+        robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE)%360;
     }
     if (front_sensor == 0){
         robot -> direction = UP;
         double propotion = error * kp;
-        *kiTotal += error;
-        double integral = ki * (*kiTotal);
-        float derivative = kd  * (error - *prior_error);
+        *kiTotal += error*delta;
+        float integral = ki * (*kiTotal);
+        float derivative = kd  * (error - *prior_error)/delta;
         int pid_res = round(propotion + integral + derivative);
+        if (pid_res > DEFAULT_ANGLE_CHANGE)
+            pid_res = DEFAULT_ANGLE_CHANGE;
+        if (pid_res < -DEFAULT_ANGLE_CHANGE)
+            pid_res = -DEFAULT_ANGLE_CHANGE;
         robot->angle = (robot->angle+pid_res)%360; 
     }
 
