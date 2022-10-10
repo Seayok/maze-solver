@@ -20,6 +20,8 @@
 #define PI 3.14159265
 #define SENSOR_VISION 30
 
+#include "time.h"
+
 struct Wall {
     int x,y;
     int width, height;
@@ -50,8 +52,8 @@ struct Robot {
     int ki;
     int kd;
     int kp;
+    double best_err;
     double kiTotal;
-
 };
 
 #endif // STRUCTURES_H_INCLUDED

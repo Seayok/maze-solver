@@ -19,11 +19,11 @@ void setup_robot(struct Robot *robot){
     robot->found_wall = 0;
     robot->switch_hand = 0;
     robot->ki = 5;
-    robot->kd = 55;
+    robot->kd = 30;
     robot->kp = 55;
     robot->kiTotal = 0;
     robot->prior_error = 0;
-    
+    robot->best_err = 0;
 
     printf("Press arrow keys to move manually, or enter to move automatically\n\n");
 }
@@ -74,6 +74,7 @@ void robotCrash(struct Robot * robot) {
 
 void robotSuccess(struct Robot * robot, int msec) {
     robot->currentSpeed = 0;
+    robot->auto_mode = 0;
     if (!robot->crashed){
         printf("Success!!!!!\n\n");
         printf("Time taken %d seconds %d milliseconds \n", msec/1000, msec%1000);
@@ -337,47 +338,41 @@ void robotMotorMove(struct Robot * robot, int crashed) {
     robot->y = (int) y_offset;
 }
 
-void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor) {
-    
+void robotAutoMotorMove(struct Robot* robot, int front_left_sensor, int front_right_sensor, int front_sensor) {
+
     int max_speed = 7;
-   // printf("%d %d %d\n", *dir * 90 + 45, robot->angle, front_right_sensor);
-
-    clock_t curtime = clock();
-    float delta = curtime - robot->prev_time;
-    delta = delta / 1e6; // convert to second
-    robot->prev_time = curtime;
-
-
-    if (front_left_sensor > 0){
+    if (front_left_sensor > 0) {
         robot->switch_hand = 1;
         robot->found_wall = 1;
     }
-    if (front_sensor > 0 || front_right_sensor > 0){
+    if (front_sensor > 0 || front_right_sensor > 0) {
         robot->found_wall = 1;
     }
 
-    if (robot->found_wall == 0){
-        if (robot->total_dir_change <= 15){
-            robot -> angle = robot -> angle + DEFAULT_ANGLE_CHANGE;
+    if (robot->found_wall == 0) {
+        if (robot->total_dir_change <= 15) {
+            robot->angle = robot->angle + DEFAULT_ANGLE_CHANGE;
             robot->total_dir_change += DEFAULT_ANGLE_CHANGE;
         }
-        if (robot -> currentSpeed < max_speed){
-            robot -> direction = UP;
-        } 
+        if (robot->currentSpeed < max_speed) {
+            robot->direction = UP;
+        }
     }
 
-    if (front_sensor > 0){
-        robot -> direction = DOWN;
-        if( robot->switch_hand == 0)
-            robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE)%360;
+    if (front_sensor > 0) {
+        robot->direction = DOWN;
+        if (robot->switch_hand == 0)
+            robot->angle = (robot->angle + 360 - DEFAULT_ANGLE_CHANGE) % 360;
         else
-            robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE)%360;
+            robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE) % 360;
     }
-    else if (robot->found_wall == 1){
+    else if (robot->found_wall == 1) {
         int sensor = front_right_sensor;
+
         if (robot->switch_hand == 1)
             sensor = front_left_sensor;
-        double error = (robot->desired - sensor)/10;
+
+        double error = robot->desired - sensor;
 
         if (error == 0 && robot->prior_error == 0){
             max_speed = 8;
@@ -388,21 +383,33 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
         }
 
 
+        sensor = front_left_sensor;
+        clock_t curtime = clock();
+        double delta = (curtime - robot->prev_time);
+        delta = delta / 1e6;
+        robot->prev_time = curtime;
         double propotion = error * robot->kp;
-        robot->kiTotal += error*delta;
-        float integral = robot->ki * (robot->kiTotal);
-        float derivative = robot->kd  * (error - robot->prior_error)/delta;
+        robot->kiTotal += error * delta;
+        double integral = robot->ki * robot->kiTotal;
+        double derivative = robot->kd * (error - robot->prior_error) / delta;
+        robot->prior_error = error;
         int pid_res = round(propotion + integral + derivative);
+        printf("%d\n", pid_res);
         if (pid_res > DEFAULT_ANGLE_CHANGE)
             pid_res = DEFAULT_ANGLE_CHANGE;
         if (pid_res < -DEFAULT_ANGLE_CHANGE)
             pid_res = -DEFAULT_ANGLE_CHANGE;
+        
         robot->total_dir_change += pid_res;
         if (robot->switch_hand == 0)
-            robot->angle = (robot->angle+pid_res)%360;
+            robot->angle = (robot->angle + pid_res + 360) % 360;
         else
-            robot->angle = (robot->angle-pid_res)%360;
-        //printf("%d %f %f", robot -> currentSpeed, error, robot->prior_error);
+            robot->angle = (robot->angle - pid_res + 360) % 360;
+        
+        robot->best_err += fabs(error);
+        
+        //printf("%d %f %f\n", robot -> currentSpeed, error, robot->prior_error);
     }
+
 
 }

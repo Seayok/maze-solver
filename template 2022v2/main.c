@@ -1,13 +1,14 @@
 #include "stdio.h"
 #include "stdlib.h"
-#include "SDL2/SDL.h"
-#include "SDL2/SDL2_gfxPrimitives.h"
+#include "SDL.h"
+#include "SDL2_gfxPrimitives.h"
 #include "time.h"
 
 #include "formulas.h"
 #include "wall.h"
 #include "robot.h"
-#include <unistd.h>
+//#include <unistd.h>
+#include <winsock2.h>
 
 int done = 0;
 
@@ -36,25 +37,37 @@ int main(int argc, char *argv[]) {
     // You describe position of top left corner of wall (x, y), then width and height going down/to right
     // Relative positions are used (OVERALL_WINDOW_WIDTH and OVERALL_WINDOW_HEIGHT)
     // But you can use absolute positions. 10 is used as the width, but you can change this.
-    //insertAndSetFirstWall(&head, 1,  OVERALL_WINDOW_WIDTH/2, OVERALL_WINDOW_HEIGHT/2, 10, OVERALL_WINDOW_HEIGHT/2);
+
+    //Basic maze
+    insertAndSetFirstWall(&head, 1,  OVERALL_WINDOW_WIDTH/2, OVERALL_WINDOW_HEIGHT/2, 10, OVERALL_WINDOW_HEIGHT/2);
     insertAndSetFirstWall(&head, 2,  OVERALL_WINDOW_WIDTH/2-100, OVERALL_WINDOW_HEIGHT/2+100, 10, OVERALL_WINDOW_HEIGHT/2-100);
     insertAndSetFirstWall(&head, 3,  OVERALL_WINDOW_WIDTH/2-250, OVERALL_WINDOW_HEIGHT/2+100, 150, 10);
-    //insertAndSetFirstWall(&head, 4,  OVERALL_WINDOW_WIDTH/2-150, OVERALL_WINDOW_HEIGHT/2, 150, 10);
+    insertAndSetFirstWall(&head, 4,  OVERALL_WINDOW_WIDTH/2-150, OVERALL_WINDOW_HEIGHT/2, 150, 10);
     insertAndSetFirstWall(&head, 5,  OVERALL_WINDOW_WIDTH/2-250, OVERALL_WINDOW_HEIGHT/2-200, 10, 300);
     insertAndSetFirstWall(&head, 6,  OVERALL_WINDOW_WIDTH/2-150, OVERALL_WINDOW_HEIGHT/2-100, 10, 100);
     insertAndSetFirstWall(&head, 7,  OVERALL_WINDOW_WIDTH/2-250, OVERALL_WINDOW_HEIGHT/2-200, 450, 10);
-
-    insertAndSetFirstWall(&head, 8,  OVERALL_WINDOW_WIDTH/2-150, OVERALL_WINDOW_HEIGHT/2-100, 450, 10);
-
+    insertAndSetFirstWall(&head, 8,  OVERALL_WINDOW_WIDTH/2-150, OVERALL_WINDOW_HEIGHT/2-100, 250, 10);
     insertAndSetFirstWall(&head, 9,  OVERALL_WINDOW_WIDTH/2+200, OVERALL_WINDOW_HEIGHT/2-200, 10, 300);
-
-    //insertAndSetFirstWall(&head, 10,  OVERALL_WINDOW_WIDTH/2+100, OVERALL_WINDOW_HEIGHT/2-100, 10, 300);
-
+    insertAndSetFirstWall(&head, 10,  OVERALL_WINDOW_WIDTH/2+100, OVERALL_WINDOW_HEIGHT/2-100, 10, 300);
     insertAndSetFirstWall(&head, 11,  OVERALL_WINDOW_WIDTH/2+100, OVERALL_WINDOW_HEIGHT/2+200, OVERALL_WINDOW_WIDTH/2-100, 10);
     insertAndSetFirstWall(&head, 12,  OVERALL_WINDOW_WIDTH/2+200, OVERALL_WINDOW_HEIGHT/2+100, OVERALL_WINDOW_WIDTH/2-100, 10);
+    //dead end subtask
+    /*insertAndSetFirstWall(&head, 1, OVERALL_WINDOW_WIDTH / 2, OVERALL_WINDOW_HEIGHT / 2, 10, OVERALL_WINDOW_HEIGHT / 2);
+    insertAndSetFirstWall(&head, 2, OVERALL_WINDOW_WIDTH / 2 - 100, OVERALL_WINDOW_HEIGHT / 2, 10, OVERALL_WINDOW_HEIGHT / 2);
+    insertAndSetFirstWall(&head, 3, OVERALL_WINDOW_WIDTH / 2 - 100, OVERALL_WINDOW_HEIGHT / 2, 100, 10);*/
 
     setup_robot(&robot);
     updateAllWalls(head, renderer);
+    //START OF TWIDDLE
+    double threshold;
+    int p[3] = { robot.kp, robot.ki, robot.kd };
+    int dp[3] = { 1, 1, 1 };
+    //double cte = robot.currentSpeed + error + robot.prior_error;
+    double bestError = robot.best_err;
+/*    printf("success1\n");
+    while (dp[0] + dp[1] + dp[2] > 20) {
+   
+        END OF TWIDDLE*/
 
     SDL_Event event;
     while(!done){
@@ -69,8 +82,66 @@ int main(int argc, char *argv[]) {
         //Check if robot reaches endpoint. and check sensor values
         if (checkRobotReachedEnd(&robot, OVERALL_WINDOW_WIDTH, OVERALL_WINDOW_HEIGHT/2+100, 10, 100)){
             end_time = clock();
-            msec = (end_time-start_time) * 10 / sysconf(_SC_CLK_TCK);
+            msec = (end_time - start_time) * 1000 / CLOCKS_PER_SEC;
             robotSuccess(&robot, msec);
+            printf("%f", robot.best_err);
+            p[0] += dp[0];
+            //cte = robot.currentSpeed + error + robot.prior_error;
+                printf("success2\n");
+
+                if (fabs(robot.best_err) < bestError) {
+                    bestError = robot.best_err;
+                    dp[i] *= 1.1;
+                    printf("success3\n");
+                }
+                else
+                {
+                    printf("success4\n");
+                    p[i] -= 2 * dp[i];
+                    //cte = robot.currentSpeed + error + robot.prior_error;
+                    if (fabs(robot.best_err) < fabs(bestError))
+                    {
+                        bestError = robot.best_err;
+                        dp[i] *= 1.1;
+                        printf("success5\n");
+                    }
+                    else {
+                        p[i] += dp[i];
+                        dp[i] *= 0.9;
+                        printf("success6\n");
+                    }
+                }
+                printf("success7\n");
+            robot.kp = p[0];
+            robot.ki = p[1];
+            robot.kd = p[2];
+            printf("%d %d %d", robot.kp, robot.ki, robot.kd);
+            //error = dp[0];
+           //robot.kiTotal = dp[1];
+            //robot.prior_error = dp[2];
+            robot.x = OVERALL_WINDOW_WIDTH / 2 - 50;
+            robot.y = OVERALL_WINDOW_HEIGHT - 50;
+            robot.true_x = OVERALL_WINDOW_WIDTH / 2 - 50;
+            robot.true_y = OVERALL_WINDOW_HEIGHT - 50;
+            robot.width = ROBOT_WIDTH;
+            robot.height = ROBOT_HEIGHT;
+            robot.direction = 0;
+            robot.angle = 0;
+            robot.currentSpeed = 0;
+            robot.crashed = 0;
+            robot.auto_mode = 0;
+
+            robot.desired = 1;
+            robot.prev_time = clock();
+            robot.total_dir_change = 0;
+            robot.found_wall = 0;
+            robot.switch_hand = 0;
+            robot.kiTotal = 0;
+            robot.prior_error = 0;
+            robot.best_err = 0;
+            crashed = 0;
+            robot.auto_mode = 1;
+            SDL_Delay(120);
         }
         else if(crashed == 1 || checkRobotHitWalls(&robot, head)){
             robotCrash(&robot);
@@ -79,16 +150,16 @@ int main(int argc, char *argv[]) {
         //Otherwise compute sensor information
         else {
             front_centre_sensor = checkRobotSensorFrontCentreAllWalls(&robot, head);
-            if (front_centre_sensor>0)
-                printf("Getting close on the centre. Score = %d\n", front_centre_sensor);
+            //if (front_centre_sensor>0)
+            //    printf("Getting close on the centre. Score = %d\n", front_centre_sensor);
 
             left_sensor = checkRobotSensorLeftAllWalls(&robot, head);
-            if (left_sensor>0)
-                printf("Getting close on the left. Score = %d\n", left_sensor);
+            //if (left_sensor>0)
+            //   printf("Getting close on the left. Score = %d\n", left_sensor);
 
             right_sensor = checkRobotSensorRightAllWalls(&robot, head);
-            if (right_sensor>0)
-                printf("Getting close on the right. Score = %d\n", right_sensor);
+            //if (right_sensor>0)
+            //    printf("Getting close on the right. Score = %d\n", right_sensor);
         }
         robotUpdate(renderer, &robot);
         updateAllWalls(head, renderer);
@@ -114,6 +185,7 @@ int main(int argc, char *argv[]) {
             }
             if(state[SDL_SCANCODE_SPACE]){
                 setup_robot(&robot);
+                crashed = 0;
             }
             if(state[SDL_SCANCODE_RETURN]){
                 robot.auto_mode = 1;
