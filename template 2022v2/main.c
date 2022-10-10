@@ -58,17 +58,6 @@ int main(int argc, char *argv[]) {
 
     setup_robot(&robot);
     updateAllWalls(head, renderer);
-    //START OF TWIDDLE
-    double threshold;
-    int p[3] = { robot.kp, robot.ki, robot.kd };
-    int dp[3] = { 1, 1, 1 };
-    //double cte = robot.currentSpeed + error + robot.prior_error;
-    double bestError = robot.best_err;
-/*    printf("success1\n");
-    while (dp[0] + dp[1] + dp[2] > 20) {
-   
-        END OF TWIDDLE*/
-
     SDL_Event event;
     while(!done){
         SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
@@ -84,64 +73,6 @@ int main(int argc, char *argv[]) {
             end_time = clock();
             msec = (end_time - start_time) * 1000 / CLOCKS_PER_SEC;
             robotSuccess(&robot, msec);
-            printf("%f", robot.best_err);
-            p[0] += dp[0];
-            //cte = robot.currentSpeed + error + robot.prior_error;
-                printf("success2\n");
-
-                if (fabs(robot.best_err) < bestError) {
-                    bestError = robot.best_err;
-                    dp[i] *= 1.1;
-                    printf("success3\n");
-                }
-                else
-                {
-                    printf("success4\n");
-                    p[i] -= 2 * dp[i];
-                    //cte = robot.currentSpeed + error + robot.prior_error;
-                    if (fabs(robot.best_err) < fabs(bestError))
-                    {
-                        bestError = robot.best_err;
-                        dp[i] *= 1.1;
-                        printf("success5\n");
-                    }
-                    else {
-                        p[i] += dp[i];
-                        dp[i] *= 0.9;
-                        printf("success6\n");
-                    }
-                }
-                printf("success7\n");
-            robot.kp = p[0];
-            robot.ki = p[1];
-            robot.kd = p[2];
-            printf("%d %d %d", robot.kp, robot.ki, robot.kd);
-            //error = dp[0];
-           //robot.kiTotal = dp[1];
-            //robot.prior_error = dp[2];
-            robot.x = OVERALL_WINDOW_WIDTH / 2 - 50;
-            robot.y = OVERALL_WINDOW_HEIGHT - 50;
-            robot.true_x = OVERALL_WINDOW_WIDTH / 2 - 50;
-            robot.true_y = OVERALL_WINDOW_HEIGHT - 50;
-            robot.width = ROBOT_WIDTH;
-            robot.height = ROBOT_HEIGHT;
-            robot.direction = 0;
-            robot.angle = 0;
-            robot.currentSpeed = 0;
-            robot.crashed = 0;
-            robot.auto_mode = 0;
-
-            robot.desired = 1;
-            robot.prev_time = clock();
-            robot.total_dir_change = 0;
-            robot.found_wall = 0;
-            robot.switch_hand = 0;
-            robot.kiTotal = 0;
-            robot.prior_error = 0;
-            robot.best_err = 0;
-            crashed = 0;
-            robot.auto_mode = 1;
-            SDL_Delay(120);
         }
         else if(crashed == 1 || checkRobotHitWalls(&robot, head)){
             robotCrash(&robot);

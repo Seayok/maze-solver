@@ -18,12 +18,11 @@ void setup_robot(struct Robot *robot){
     robot->total_dir_change = 0;
     robot->found_wall = 0;
     robot->switch_hand = 0;
-    robot->ki = 5;
-    robot->kd = 30;
+    robot->ki = 30;
+    robot->kd = 5;
     robot->kp = 55;
     robot->kiTotal = 0;
     robot->prior_error = 0;
-    robot->best_err = 0;
 
     printf("Press arrow keys to move manually, or enter to move automatically\n\n");
 }
@@ -338,9 +337,19 @@ void robotMotorMove(struct Robot * robot, int crashed) {
     robot->y = (int) y_offset;
 }
 
+double TotalError(struct Robot* robot, double p_error, double i_error, double d_error)
+{
+    return robot->kp*p_error + robot->ki*i_error + robot->kd*d_error;
+}
+
 void robotAutoMotorMove(struct Robot* robot, int front_left_sensor, int front_right_sensor, int front_sensor) {
 
     int max_speed = 7;
+    clock_t curtime = clock();
+    double delta = (curtime - robot->prev_time);
+    delta = delta / 1e3;
+    robot->prev_time = curtime;
+
     if (front_left_sensor > 0) {
         robot->switch_hand = 1;
         robot->found_wall = 1;
@@ -368,46 +377,67 @@ void robotAutoMotorMove(struct Robot* robot, int front_left_sensor, int front_ri
     }
     else if (robot->found_wall == 1) {
         int sensor = front_right_sensor;
-
         if (robot->switch_hand == 1)
             sensor = front_left_sensor;
-
         double error = robot->desired - sensor;
-
         if (error == 0 && robot->prior_error == 0){
-            max_speed = 8;
+            max_speed = 7;
         }
-
         if (robot -> currentSpeed < max_speed){
             robot -> direction = UP;
         }
-
-
-        sensor = front_left_sensor;
-        clock_t curtime = clock();
-        double delta = (curtime - robot->prev_time);
-        delta = delta / 1e6;
-        robot->prev_time = curtime;
-        double propotion = error * robot->kp;
+        //START OF TWIDDLE
+        double threshold = 0.02;
+        int p[3] = {robot->kp, robot->ki, robot->kd};
+        int dp[3] = {1, 1, 1};
+        double bestErr = 1e9;
+        while (dp[0] + dp[1] + dp[2] > 0.02)
+        {
+            for (int i = 0; i < 3; i++) {
+                p[i] += dp[i];
+                robot->kp = p[0];
+                robot->ki = p[1];
+                robot->kd = p[2];
+                double err = TotalError(&robot, error, robot->kiTotal, (error - robot->prior_error) / delta);   
+                if (abs(err) < bestErr) {
+                    bestErr = abs(err);
+                    dp[i] *= 1.1;
+                }
+                else {
+                    p[i] -= 2 * dp[i];
+                    robot->kp = p[0];
+                    robot->ki = p[1];
+                    robot->kd = p[2];
+                    err = TotalError(&robot, error, robot->kiTotal, (error - robot->prior_error) / delta);
+                    if (abs(err) < bestErr) {
+                        bestErr = abs(err);
+                        dp[i] *= 1.1;
+                    }
+                    else {
+                        p[i] += dp[i];
+                        dp[i] *= 0.9;
+                    }
+                }
+            }
+        }
+        //END OF TWIDDLE
         robot->kiTotal += error * delta;
-        double integral = robot->ki * robot->kiTotal;
-        double derivative = robot->kd * (error - robot->prior_error) / delta;
+
+        double propotion = error * robot->kp;
+        float integral = robot->ki * (robot->kiTotal);
+        float derivative = robot->kd * (error - robot->prior_error) / delta;
+        //int pid_res = round(propotion + integral + derivative);
+        int pid_res = round(TotalError(robot, error, robot->kiTotal, (error - robot->prior_error) / delta));
         robot->prior_error = error;
-        int pid_res = round(propotion + integral + derivative);
-        printf("%d\n", pid_res);
         if (pid_res > DEFAULT_ANGLE_CHANGE)
             pid_res = DEFAULT_ANGLE_CHANGE;
         if (pid_res < -DEFAULT_ANGLE_CHANGE)
             pid_res = -DEFAULT_ANGLE_CHANGE;
-        
         robot->total_dir_change += pid_res;
         if (robot->switch_hand == 0)
             robot->angle = (robot->angle + pid_res + 360) % 360;
         else
             robot->angle = (robot->angle - pid_res + 360) % 360;
-        
-        robot->best_err += fabs(error);
-        
         //printf("%d %f %f\n", robot -> currentSpeed, error, robot->prior_error);
     }
 
