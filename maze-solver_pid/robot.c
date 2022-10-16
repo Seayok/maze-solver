@@ -3,11 +3,11 @@
 void setup_robot(struct Robot *robot){
     robot->x = OVERALL_WINDOW_WIDTH/2-50;
     robot->y = OVERALL_WINDOW_HEIGHT-50;
-    // robot->true_x = OVERALL_WINDOW_WIDTH/2-50;
-    // robot->true_y = OVERALL_WINDOW_HEIGHT-50;
-    // robot->true_x = 50; robot->true_y = OVERALL_WINDOW_HEIGHT-50;
-    robot->true_x = 117;
-    robot->true_y = OVERALL_WINDOW_HEIGHT-100;
+    robot->true_x = OVERALL_WINDOW_WIDTH/2-50;
+    robot->true_y = OVERALL_WINDOW_HEIGHT-50;
+    // // robot->true_x = 50; robot->true_y = OVERALL_WINDOW_HEIGHT-50;
+    // robot->true_x = 117;
+    // robot->true_y = OVERALL_WINDOW_HEIGHT-100;
     // robot->true_x = 70;
     // robot->true_y = OVERALL_WINDOW_HEIGHT-100;
     robot->width = ROBOT_WIDTH;
@@ -22,8 +22,8 @@ void setup_robot(struct Robot *robot){
     robot->total_dir_change = 0;
     robot->found_wall = 0;
     robot->switch_hand = 0;
-    robot->ki = 0.5;
-    robot->kd = 2;
+    robot->ki = 1.3;
+    robot->kd = 2.5;
     robot->kp = 15;
     robot->kiTotal = 0;
     robot->prior_error = 0;
@@ -344,6 +344,15 @@ void robotMotorMove(struct Robot * robot, int crashed) {
 void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor) {
     
     int max_speed = 5;
+    int sensor = front_right_sensor;
+    int other_sensor = front_left_sensor;
+    if (robot -> found_wall == 0){
+        max_speed = 3;
+    }
+    if (robot->switch_hand == 1){
+        sensor = front_left_sensor;
+        other_sensor = front_right_sensor;
+    }
    // printf("%d %d %d\n", *dir * 90 + 45, robot->angle, front_right_sensor);
     //clock_t curtime = clock();
     //float delta = curtime - robot->prev_time;
@@ -354,9 +363,11 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     if (front_left_sensor > 0 && robot->found_wall == 0){
         robot->switch_hand = 1;
         robot->found_wall = 1;
+        robot->kiTotal = 0;
     }
     if (front_sensor > 0 || front_right_sensor > 0){
         robot->found_wall = 1;
+        robot->kiTotal = 0;
     }
 
     if (robot->found_wall == 0){
@@ -371,34 +382,33 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
 
     if (front_sensor > 0){
         robot -> direction = DOWN;
-        int change = DEFAULT_ANGLE_CHANGE;
+        int change = 0;
+        if (robot -> kiTotal > 0){
+            change = DEFAULT_ANGLE_CHANGE + 15;
+        }
         if( robot->switch_hand == 0)
-            robot->angle = (robot->angle - change)%360;
+            robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE + change)%360;
         else
-            robot->angle = (robot->angle + change)%360;
+            robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE - change)%360;
     }
     else if (robot->found_wall == 1 && front_sensor < 1){
-        int sensor = front_right_sensor;
-        if (robot->switch_hand == 1){
-            sensor = front_left_sensor;
-            int other_sensor = front_right_sensor;
-        }
-        
-        if (robot -> currentSpeed < max_speed){
-            robot -> direction = UP;
-        }
         int bias = 0;
         int error = robot->desired - sensor;
         double propotion = error * robot->kp;
         robot->kiTotal += error;
         float integral = robot->ki * (robot->kiTotal);
         float derivative = robot->kd  * (error - robot->prior_error);
-        if (robot->kiTotal > 18){
-            bias = -30;
+
+        if(robot ->kiTotal > 15){
+            bias = -50;
         }
 
-        if (derivative == 0 && error == 0)
+        if (derivative == 0 && error == 0){
             robot->kiTotal = 0;
+        }
+        if (robot -> currentSpeed < max_speed){
+            robot -> direction = UP;
+        }
         
         robot->prior_error = error;
         int pid_res = round(propotion + integral + derivative + bias);
@@ -423,5 +433,8 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     }
     if(robot -> currentSpeed < -1){
         robot -> currentSpeed = -1;
+    }
+    if(robot -> currentSpeed > max_speed){
+        robot -> direction = DOWN;
     }
 }
