@@ -6,8 +6,6 @@ void setup_robot(struct Robot *robot){
     robot->true_x = OVERALL_WINDOW_WIDTH/2-50;
     robot->true_y = OVERALL_WINDOW_HEIGHT-50;
     // // // robot->true_x = 50; robot->true_y = OVERALL_WINDOW_HEIGHT-50;
-    robot->true_x = 70;
-    robot->true_y = OVERALL_WINDOW_HEIGHT-100;
     // robot->true_x = 70;
     // robot->true_y = OVERALL_WINDOW_HEIGHT-100;
     robot->width = ROBOT_WIDTH;
@@ -22,8 +20,8 @@ void setup_robot(struct Robot *robot){
     robot->total_dir_change = 0;
     robot->found_wall = 0;
     robot->switch_hand = 0;
-    robot->ki = 0.8;
-    robot->kd = 1.5;
+    robot->ki = 0.5;
+    robot->kd = 2;
     robot->kp = 15;
     robot->kiTotal = 0;
     robot->prior_error = 0;
@@ -383,7 +381,7 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     if (front_sensor > 0){
         robot -> direction = DOWN;
         int change = 0;
-        if (robot -> kiTotal > 0){
+        if (robot -> kiTotal > 1){
             change = DEFAULT_ANGLE_CHANGE + 15;
         }
         if( robot->switch_hand == 0)
@@ -399,8 +397,8 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
         float integral = robot->ki * (robot->kiTotal);
         float derivative = robot->kd  * (error - robot->prior_error);
 
-        if(robot ->kiTotal > 2)
-            bias = -20;
+        if(robot ->kiTotal > 15)
+            bias = -30;
         
 
         if (derivative == 0 && error == 0){
