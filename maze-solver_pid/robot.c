@@ -6,8 +6,6 @@ void setup_robot(struct Robot *robot){
     robot->true_x = OVERALL_WINDOW_WIDTH/2-50;
     robot->true_y = OVERALL_WINDOW_HEIGHT-50;
     // // // robot->true_x = 50; robot->true_y = OVERALL_WINDOW_HEIGHT-50;
-    // robot->true_x = 70;
-    // robot->true_y = OVERALL_WINDOW_HEIGHT-100;
     robot->width = ROBOT_WIDTH;
     robot->height = ROBOT_HEIGHT;
     robot->direction = 0;
@@ -16,14 +14,15 @@ void setup_robot(struct Robot *robot){
     robot->crashed = 0;
     robot->auto_mode = 0;
 
-    robot->desired = 3;
+    robot->desired = 2;
     robot->total_dir_change = 0;
     robot->found_wall = 0;
     robot->switch_hand = 0;
     robot->ki = 0.5;
-    robot->kd = 0.5;
+    robot->kd = 1;
     robot->kp = 15;
     robot->kiTotal = 0;
+    robot->total_err = 0;
     robot->prior_error = 0;
     
 
@@ -341,16 +340,17 @@ void robotMotorMove(struct Robot * robot, int crashed) {
 
 void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor) {
     
-    int max_speed = 8;
+    int max_speed = 5;
     int sensor = front_right_sensor;
     int other_sensor = front_left_sensor;
     if (robot->switch_hand == 1){
         sensor = front_left_sensor;
         other_sensor = front_right_sensor;
     }
-    if (robot->kiTotal > 1 && robot->found_wall == 1){
-        max_speed = 25;
+    if (robot->kiTotal > 2 && robot->found_wall == 1){
+        max_speed = 8;
     }
+    printf("%d", max_speed);
     if (front_left_sensor > 0 && robot->found_wall == 0){
         robot->switch_hand = 1;
         robot->found_wall = 1;
@@ -362,6 +362,7 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     }
 
     if (robot->found_wall == 0){
+        max_speed = 3;
         if (robot->total_dir_change <= 15){
             robot -> angle = robot -> angle + DEFAULT_ANGLE_CHANGE;
             robot->total_dir_change += DEFAULT_ANGLE_CHANGE;
@@ -374,18 +375,18 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     if (front_sensor > 0){
         robot -> direction = DOWN;
         int change = 0;
-        if (robot -> kiTotal > 1){
-            change = DEFAULT_ANGLE_CHANGE + 15;
-        }
-        if( robot->switch_hand == 0)
-            robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE + change)%360;
-        else
-            robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE - change)%360;
+        if(front_sensor > robot->kiTotal + 1 || other_sensor > robot -> kiTotal + 1)
+            if( robot->switch_hand == 0)
+                robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE + change)%360;
+            else
+                robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE - change)%360;
     }
-    else if (robot->found_wall == 1 && front_sensor < 1){
+    if (robot->found_wall == 1 && front_sensor < 2){
         int error = robot->desired - sensor;
-        if(other_sensor > 2){
-            error = other_sensor - sensor;
+        if(other_sensor > 1){
+           // error = other_sensor - sensor;
+            robot -> desired = 3;
+            error = robot->desired - sensor;
         }
         double propotion = error * robot->kp;
         robot->kiTotal += error;
@@ -426,5 +427,12 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     }
     if(robot -> currentSpeed > max_speed){
         robot -> direction = DOWN;
+    }
+    if(robot -> scout == 1){
+        if( robot->switch_hand == 0)
+            robot->angle = (robot->angle - 1)%360;
+        else
+            robot->angle = (robot->angle + 1)%360;
+        
     }
 }
