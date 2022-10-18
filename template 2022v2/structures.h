@@ -43,17 +43,18 @@ struct Robot {
     int crashed;
     int auto_mode;
 
-    double prior_error;
-    double desired;
     clock_t prev_time;
     int switch_hand;
     int found_wall;
     int total_dir_change;
+
+    double desired;
+    double prior_error;
+    double kiTotal;
+    int total_err;
     int ki;
     int kd;
     int kp;
-    double best_err;
-    double kiTotal;
 };
 
 #endif // STRUCTURES_H_INCLUDED

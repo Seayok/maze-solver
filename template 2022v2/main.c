@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     // But you can use absolute positions. 10 is used as the width, but you can change this.
 
     //Basic maze
-    insertAndSetFirstWall(&head, 1,  OVERALL_WINDOW_WIDTH/2, OVERALL_WINDOW_HEIGHT/2, 10, OVERALL_WINDOW_HEIGHT/2);
+    /*insertAndSetFirstWall(&head, 1, OVERALL_WINDOW_WIDTH / 2, OVERALL_WINDOW_HEIGHT / 2, 10, OVERALL_WINDOW_HEIGHT / 2);
     insertAndSetFirstWall(&head, 2,  OVERALL_WINDOW_WIDTH/2-100, OVERALL_WINDOW_HEIGHT/2+100, 10, OVERALL_WINDOW_HEIGHT/2-100);
     insertAndSetFirstWall(&head, 3,  OVERALL_WINDOW_WIDTH/2-250, OVERALL_WINDOW_HEIGHT/2+100, 150, 10);
     insertAndSetFirstWall(&head, 4,  OVERALL_WINDOW_WIDTH/2-150, OVERALL_WINDOW_HEIGHT/2, 150, 10);
@@ -51,10 +51,33 @@ int main(int argc, char *argv[]) {
     insertAndSetFirstWall(&head, 10,  OVERALL_WINDOW_WIDTH/2+100, OVERALL_WINDOW_HEIGHT/2-100, 10, 300);
     insertAndSetFirstWall(&head, 11,  OVERALL_WINDOW_WIDTH/2+100, OVERALL_WINDOW_HEIGHT/2+200, OVERALL_WINDOW_WIDTH/2-100, 10);
     insertAndSetFirstWall(&head, 12,  OVERALL_WINDOW_WIDTH/2+200, OVERALL_WINDOW_HEIGHT/2+100, OVERALL_WINDOW_WIDTH/2-100, 10);
+    //
     //dead end subtask
     /*insertAndSetFirstWall(&head, 1, OVERALL_WINDOW_WIDTH / 2, OVERALL_WINDOW_HEIGHT / 2, 10, OVERALL_WINDOW_HEIGHT / 2);
     insertAndSetFirstWall(&head, 2, OVERALL_WINDOW_WIDTH / 2 - 100, OVERALL_WINDOW_HEIGHT / 2, 10, OVERALL_WINDOW_HEIGHT / 2);
     insertAndSetFirstWall(&head, 3, OVERALL_WINDOW_WIDTH / 2 - 100, OVERALL_WINDOW_HEIGHT / 2, 100, 10);*/
+    insertAndSetFirstWall(&head, 1, OVERALL_WINDOW_WIDTH / 2, OVERALL_WINDOW_HEIGHT / 2 + 150, 10, OVERALL_WINDOW_HEIGHT / 2 - 150);
+    insertAndSetFirstWall(&head, 2, OVERALL_WINDOW_WIDTH / 2 - 100, OVERALL_WINDOW_HEIGHT / 2 + 150, 10, OVERALL_WINDOW_HEIGHT / 2 - 150);
+    insertAndSetFirstWall(&head, 3, OVERALL_WINDOW_WIDTH / 2 - 200, OVERALL_WINDOW_HEIGHT / 2 + 150, 100, 10);
+    insertAndSetFirstWall(&head, 4, OVERALL_WINDOW_WIDTH / 2, OVERALL_WINDOW_HEIGHT / 2 + 150, 250, 10);
+    insertAndSetFirstWall(&head, 5, OVERALL_WINDOW_WIDTH / 2 - 150, OVERALL_WINDOW_HEIGHT / 2 + 100, 400, 10);
+    insertAndSetFirstWall(&head, 6, OVERALL_WINDOW_WIDTH / 2 + 250, OVERALL_WINDOW_HEIGHT / 2 + 100, 10, OVERALL_WINDOW_HEIGHT / 2 - 180);
+    insertAndSetFirstWall(&head, 7, OVERALL_WINDOW_WIDTH / 2 - 200, OVERALL_WINDOW_HEIGHT / 2 - 60, 10, OVERALL_WINDOW_HEIGHT / 2 - 20);
+    insertAndSetFirstWall(&head, 8, OVERALL_WINDOW_WIDTH / 2 - 150, OVERALL_WINDOW_HEIGHT / 2 + 20, 10, OVERALL_WINDOW_HEIGHT / 2 - 150);
+    insertAndSetFirstWall(&head, 9, OVERALL_WINDOW_WIDTH / 2 - 150, OVERALL_WINDOW_HEIGHT / 2 + 20, 400, 10);
+    insertAndSetFirstWall(&head, 10, OVERALL_WINDOW_WIDTH / 2 + 250, OVERALL_WINDOW_HEIGHT / 2 - 210, 10, OVERALL_WINDOW_HEIGHT / 2);
+    insertAndSetFirstWall(&head, 11, OVERALL_WINDOW_WIDTH / 2 + 100, OVERALL_WINDOW_HEIGHT / 2 - 210, 150, 10);
+    insertAndSetFirstWall(&head, 12, OVERALL_WINDOW_WIDTH / 2 - 200, OVERALL_WINDOW_HEIGHT / 2 - 60, 400, 10);
+    insertAndSetFirstWall(&head, 13, OVERALL_WINDOW_WIDTH / 2 + 100, OVERALL_WINDOW_HEIGHT / 2 - 210, 10, OVERALL_WINDOW_HEIGHT / 2 - 150);
+    insertAndSetFirstWall(&head, 14, OVERALL_WINDOW_WIDTH / 2 + 100, OVERALL_WINDOW_HEIGHT / 2 - 130, 100, 10);
+    insertAndSetFirstWall(&head, 15, OVERALL_WINDOW_WIDTH / 2 + 200, OVERALL_WINDOW_HEIGHT / 2 - 130, 10, 30);
+    insertAndSetFirstWall(&head, 16, OVERALL_WINDOW_WIDTH / 2 - 50, OVERALL_WINDOW_HEIGHT / 2 - 110, 250, 10);
+    insertAndSetFirstWall(&head, 17, OVERALL_WINDOW_WIDTH / 2 - 50, OVERALL_WINDOW_HEIGHT / 2 - 190, 10, OVERALL_WINDOW_HEIGHT / 2 - 150);
+    insertAndSetFirstWall(&head, 18, OVERALL_WINDOW_WIDTH / 2 - 150, OVERALL_WINDOW_HEIGHT / 2 - 150, 10, OVERALL_WINDOW_HEIGHT / 2 - 150);
+    insertAndSetFirstWall(&head, 19, OVERALL_WINDOW_WIDTH / 2 - 350, OVERALL_WINDOW_HEIGHT / 2 - 200, 310, 10);
+    insertAndSetFirstWall(&head, 20, OVERALL_WINDOW_WIDTH / 2 - 350, OVERALL_WINDOW_HEIGHT / 2 - 150, 210, 10);
+    //insertAndSetFirstWall(&head, 1, OVERALL_WINDOW_WIDTH / 2 - 90, OVERALL_WINDOW_HEIGHT - 100, 10, 60);
+    
 
     setup_robot(&robot);
     updateAllWalls(head, renderer);
@@ -65,7 +88,7 @@ int main(int argc, char *argv[]) {
 
         //Move robot based on user input commands/auto commands
         if (robot.auto_mode == 1)
-            robotAutoMotorMove(&robot, left_sensor, right_sensor, front_centre_sensor);
+            robotAutoMotorMove(&robot, head, left_sensor, right_sensor, front_centre_sensor);
         robotMotorMove(&robot, crashed);
 
         //Check if robot reaches endpoint. and check sensor values
@@ -73,6 +96,7 @@ int main(int argc, char *argv[]) {
             end_time = clock();
             msec = (end_time - start_time) * 1000 / CLOCKS_PER_SEC;
             robotSuccess(&robot, msec);
+            robot.auto_mode = 0;
         }
         else if(crashed == 1 || checkRobotHitWalls(&robot, head)){
             robotCrash(&robot);

@@ -4,8 +4,8 @@
 
 #include "stdio.h"
 #include "stdlib.h"
-#include "SDL2/SDL.h"
-#include "SDL2/SDL2_gfxPrimitives.h"
+#include "SDL.h"
+#include "SDL2_gfxPrimitives.h"
 #include "formulas.h"
 #include "time.h"
 #include "wall.h"
@@ -33,6 +33,6 @@ void robotUpdate(struct SDL_Renderer * renderer, struct Robot * robot);
 
 //Movement
 void robotMotorMove(struct Robot * robot, int crashed);
-void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor);
+void robotAutoMotorMove(struct Robot * robot, struct Wall_collection* head, int front_left_sensor, int front_right_sensor, int front_sensor);
 
 #endif // ROBOT_H_INCLUDED
