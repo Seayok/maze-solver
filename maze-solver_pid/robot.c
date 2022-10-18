@@ -23,6 +23,7 @@ void setup_robot(struct Robot *robot){
     robot->kp = 15;
     robot->kiTotal = 0;
     robot->total_err = 0;
+    robot->sum = 0;
     robot->prior_error = 0;
     
 
@@ -343,20 +344,35 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     int max_speed = 5;
     int sensor = front_right_sensor;
     int other_sensor = front_left_sensor;
+
+    if(robot -> sum > 0){
+        robot->direction = DOWN;
+        if( robot->switch_hand == 0)
+            robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE)%360;
+        else
+            robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE)%360;
+        robot -> sum -= 1;
+        if(robot -> currentSpeed < -1)
+            robot -> currentSpeed = -1;
+        return;
+    }
+
     if (robot->switch_hand == 1){
         sensor = front_left_sensor;
         other_sensor = front_right_sensor;
     }
+
     if (robot->kiTotal > 2 && robot->found_wall == 1){
-        max_speed = 8;
+        max_speed = 7;
     }
+
     printf("%d", max_speed);
     if (front_left_sensor > 0 && robot->found_wall == 0){
         robot->switch_hand = 1;
         robot->found_wall = 1;
         robot->kiTotal = 0;
     }
-    if (front_sensor > 0 || front_right_sensor > 0){
+    if (front_right_sensor > 0){
         robot->found_wall = 1;
         robot->kiTotal = 0;
     }
@@ -374,24 +390,31 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
 
     if (front_sensor > 0){
         robot -> direction = DOWN;
-        int change = 0;
-        if(front_sensor > robot->kiTotal + 1 || other_sensor > robot -> kiTotal + 1)
+        if(front_sensor > robot->kiTotal + 1 || other_sensor > robot->kiTotal  || robot -> found_wall == 0){
+            if (other_sensor > 0){
+                robot-> sum = 3;
+                return;
+            }
             if( robot->switch_hand == 0)
-                robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE + change)%360;
+                robot->angle = (robot->angle - DEFAULT_ANGLE_CHANGE)%360;
             else
-                robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE - change)%360;
+                robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE)%360;
+        }
     }
+    
     if (robot->found_wall == 1 && front_sensor < 2){
         int error = robot->desired - sensor;
-        if(other_sensor > 1){
+        if(other_sensor > 1 || robot->kiTotal > 1){
            // error = other_sensor - sensor;
             robot -> desired = 3;
             error = robot->desired - sensor;
         }
-        double propotion = error * robot->kp;
         robot->kiTotal += error;
         float integral = robot->ki * (robot->kiTotal);
         float derivative = robot->kd  * (error - robot->prior_error);
+        if(other_sensor == 0 && derivative == 0 && error == 0)
+            robot -> desired = 2;
+        double propotion = error * robot->kp;
         
 
         if (derivative == 0 && error == 0){
