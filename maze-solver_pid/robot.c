@@ -21,7 +21,7 @@ void setup_robot(struct Robot *robot){
     robot->found_wall = 0;
     robot->switch_hand = 0;
     robot->ki = 0.5;
-    robot->kd = 2;
+    robot->kd = 0.5;
     robot->kp = 15;
     robot->kiTotal = 0;
     robot->prior_error = 0;
@@ -341,23 +341,16 @@ void robotMotorMove(struct Robot * robot, int crashed) {
 
 void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_right_sensor, int front_sensor) {
     
-    int max_speed = 5;
+    int max_speed = 8;
     int sensor = front_right_sensor;
     int other_sensor = front_left_sensor;
-    if (robot -> found_wall == 0){
-        max_speed = 3;
-    }
     if (robot->switch_hand == 1){
         sensor = front_left_sensor;
         other_sensor = front_right_sensor;
     }
-   // printf("%d %d %d\n", *dir * 90 + 45, robot->angle, front_right_sensor);
-    //clock_t curtime = clock();
-    //float delta = curtime - robot->prev_time;
-    //delta = delta / 1e3; // convert to second
-    //robot->prev_time = curtime;
-
-
+    if (robot->kiTotal > 1 && robot->found_wall == 1){
+        max_speed = 25;
+    }
     if (front_left_sensor > 0 && robot->found_wall == 0){
         robot->switch_hand = 1;
         robot->found_wall = 1;
@@ -390,15 +383,14 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
             robot->angle = (robot->angle + DEFAULT_ANGLE_CHANGE - change)%360;
     }
     else if (robot->found_wall == 1 && front_sensor < 1){
-        int bias = 0;
         int error = robot->desired - sensor;
+        if(other_sensor > 2){
+            error = other_sensor - sensor;
+        }
         double propotion = error * robot->kp;
         robot->kiTotal += error;
         float integral = robot->ki * (robot->kiTotal);
         float derivative = robot->kd  * (error - robot->prior_error);
-
-        if(robot ->kiTotal > 15)
-            bias = -30;
         
 
         if (derivative == 0 && error == 0){
@@ -409,7 +401,7 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
         }
         
         robot->prior_error = error;
-        int pid_res = round(propotion + integral + derivative + bias);
+        int pid_res = round(propotion + integral + derivative);
         printf("%d\n", pid_res);
         if (pid_res > DEFAULT_ANGLE_CHANGE)
             pid_res = DEFAULT_ANGLE_CHANGE;
