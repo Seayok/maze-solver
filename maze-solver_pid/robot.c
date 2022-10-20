@@ -367,8 +367,9 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     }
 
     printf("%d", max_speed);
-    if (front_left_sensor > 0 && robot->found_wall == 0){
-        robot->switch_hand = 1;
+    if (front_left_sensor > 0){
+        if (robot->found_wall == 0)
+            robot->switch_hand = 1;
         robot->found_wall = 1;
         robot->kiTotal = 0;
     }
@@ -450,12 +451,5 @@ void robotAutoMotorMove(struct Robot * robot, int front_left_sensor, int front_r
     }
     if(robot -> currentSpeed > max_speed){
         robot -> direction = DOWN;
-    }
-    if(robot -> scout == 1){
-        if( robot->switch_hand == 0)
-            robot->angle = (robot->angle - 1)%360;
-        else
-            robot->angle = (robot->angle + 1)%360;
-        
     }
 }
